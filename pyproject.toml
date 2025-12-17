@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "fastapi-backend-template"
+version = "1.0.0"
+description = "通用 FastAPI 后端项目模板，支持 MySQL/MSSQL 数据库"
+authors = ["Your Name <your.email@example.com>"]
+readme = "README.md"
+license = "MIT"
+packages = [{include = "app"}]
+
+[tool.poetry.dependencies]
+python = "^3.13"
+fastapi = "^0.115.0"
+uvicorn = {extras = ["standard"], version = "^0.32.0"}
+pydantic = "^2.10.0"
+pydantic-settings = "^2.6.0"
+sqlalchemy = "^2.0.36"
+pymysql = "^1.1.1"
+pyodbc = "^5.2.0"
+python-multipart = "^0.0.20"
+aiofiles = "^24.1.0"
+httpx = "^0.28.0"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.4"
+pytest-asyncio = "^0.24.0"
+black = "^24.10.0"
+flake8 = "^7.1.1"
+mypy = "^1.13.0"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py313']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.13"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

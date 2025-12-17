@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # FastAPI 应用服务
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fastapi-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: fastapi-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD:-password}
+      MYSQL_DATABASE: ${DATABASE_NAME:-fastapi_db}
+      MYSQL_USER: ${DATABASE_USER:-fastapi}
+      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-password}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - backend-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DATABASE_PASSWORD:-password}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MSSQL 数据库服务（可选，如需使用请取消注释）
+  # mssql:
+  #   image: mcr.microsoft.com/mssql/server:2022-latest
+  #   container_name: fastapi-mssql
+  #   ports:
+  #     - "1433:1433"
+  #   environment:
+  #     ACCEPT_EULA: Y
+  #     SA_PASSWORD: ${DATABASE_PASSWORD:-YourPassword123}
+  #     MSSQL_PID: Developer
+  #   volumes:
+  #     - mssql-data:/var/opt/mssql
+  #   networks:
+  #     - backend-network
+  #   healthcheck:
+  #     test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DATABASE_PASSWORD:-YourPassword123}" -Q "SELECT 1" || exit 1
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   restart: unless-stopped
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  # mssql-data:  # 如需使用 MSSQL 请取消注释

@@ -1,0 +1,22 @@
+# FastAPI Backend Template Requirements
+# 如果不使用 Poetry，可以使用此文件安装依赖：pip install -r requirements.txt
+
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+pydantic>=2.10.0
+pydantic-settings>=2.6.0
+sqlalchemy>=2.0.36
+pymysql>=1.1.1
+pyodbc>=5.2.0
+python-multipart>=0.0.20
+aiofiles>=24.1.0
+httpx>=0.28.0
+python-dotenv>=1.0.1
+
+# Development dependencies
+pytest>=8.3.4
+pytest-asyncio>=0.24.0
+black>=24.10.0
+flake8>=7.1.1
+mypy>=1.13.0
+isort>=5.13.2
