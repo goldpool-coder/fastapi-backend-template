@@ -84,12 +84,14 @@ poetry install
 cp .env.example .env
 # 编辑 .env 文件，配置数据库连接等信息
 ```
+注意：拷贝后须修改数据库账号和密码。
 
 4. **初始化数据库**
 
 ```bash
 poetry run python scripts/init_db.py
 ```
+注意：运行前需先创建数据库：CREATE DATABASE fastapi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 5. **启动应用**
 
