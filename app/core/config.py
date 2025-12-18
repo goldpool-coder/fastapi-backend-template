@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     # 基础配置
     PROJECT_NAME: str = "FastAPI Backend Template"
     VERSION: str = "1.0.0"
-    DESCRIPTION: str = "通用 FastAPI 后端项目模板，支持 MySQL/MSSQL 数据库"
+    DESCRIPTION: str = "通用 FastAPI 后端项目模板，支持 MySQL/MSSQL/PostgreSQL 数据库"
     API_V1_STR: str = "/api/v1"
     HOST: str = "0.0.0.0"
     PORT: int = 8000
@@ -38,7 +38,8 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     # 数据库配置
-    DATABASE_TYPE: str = "mysql"  # 可选: mysql, mssql
+    # 可选类型: mysql, mssql, postgres, postgresql
+    DATABASE_TYPE: str = "mysql"
     DATABASE_HOST: str = "localhost"
     DATABASE_PORT: int = 3306
     DATABASE_USER: str = "root"
@@ -92,6 +93,12 @@ class Settings(BaseSettings):
                 f"mssql+pyodbc://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
                 f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
                 f"?driver={self.MSSQL_DRIVER.replace(' ', '+')}"
+            )
+        elif self.DATABASE_TYPE in ("postgres", "postgresql"):
+            # 使用 SQLAlchemy 官方推荐的 psycopg 驱动
+            return (
+                f"postgresql+psycopg://{self.DATABASE_USER}:{self.DATABASE_PASSWORD}"
+                f"@{self.DATABASE_HOST}:{self.DATABASE_PORT}/{self.DATABASE_NAME}"
             )
         else:
             raise ValueError(f"不支持的数据库类型: {self.DATABASE_TYPE}")

@@ -3,7 +3,7 @@ Item 相关的 Pydantic Schema
 用于请求验证和响应序列化
 """
 from datetime import datetime
-from typing import Optional
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -45,3 +45,15 @@ class ItemResponse(ItemInDB):
     """Item 响应 Schema"""
 
     pass
+
+
+class ItemListResponse(BaseModel):
+    """Item 分页列表响应 Schema
+
+    用于演示标准分页返回结构
+    """
+
+    total: int = Field(..., description="总记录数")
+    items: List[ItemResponse] = Field(..., description="当前页数据列表")
+    skip: int = Field(..., description="跳过的记录数")
+    limit: int = Field(..., description="返回的最大记录数")

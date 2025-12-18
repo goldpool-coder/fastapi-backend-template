@@ -3,8 +3,7 @@ MQTT 客户端工具模块
 使用 paho-mqtt 实现消息发布和订阅
 """
 import paho.mqtt.client as mqtt
-import time
-from typing import Callable, Dict, Any
+from typing import Callable, Dict, Any, List
 
 from app.core.config import settings
 from app.utils.logger import logger
@@ -20,7 +19,7 @@ class MQTTClient:
         self.client.on_message = self._on_message
         self.client.on_disconnect = self._on_disconnect
         self.is_connected = False
-        self.message_handlers: Dict[str, Callable[[str, Any], None]] = {}
+        self.message_handlers: Dict[str, List[Callable[[str, Any], None]]] = {}
 
     def _on_connect(self, client, userdata, flags, rc):
         """连接成功回调"""
@@ -47,7 +46,8 @@ class MQTTClient:
 
         if topic in self.message_handlers:
             try:
-                self.message_handlers[topic](topic, payload)
+                for handler in list(self.message_handlers.get(topic, [])):
+                    handler(topic, payload)
             except Exception as e:
                 logger.error(f"处理 MQTT 消息失败: {e}")
 
@@ -63,28 +63,24 @@ class MQTTClient:
 
     def disconnect(self):
         """断开 MQTT 连接"""
-        if self.is_connected:
+        # 无论当前连接状态如何，都尝试停止循环和断开连接，保证后台线程不会残留
+        try:
             self.client.loop_stop()
+        except Exception:
+            pass
+        try:
             self.client.disconnect()
-            logger.info("🛑 MQTT 客户端已停止")
+        except Exception:
+            pass
+        logger.info("🛑 MQTT 客户端已停止")
+        self.is_connected = False
 
     def publish(self, topic: str, payload: str, qos: int = 0, retain: bool = False) -> bool:
-        """
-        发布消息
-        
-        Args:
-            topic: 主题
-            payload: 消息内容
-            qos: 服务质量等级
-            retain: 是否保留消息
-            
-        Returns:
-            是否成功发布
-        """
+        """发布消息"""
         if not self.is_connected:
             logger.warning("⚠️ MQTT 客户端未连接，无法发布消息")
             return False
-        
+
         result = self.client.publish(topic, payload, qos, retain)
         if result.rc == mqtt.MQTT_ERR_SUCCESS:
             logger.info(f"📤 成功发布 MQTT 消息: Topic='{topic}', Payload='{payload}'")
@@ -94,15 +90,8 @@ class MQTTClient:
             return False
 
     def subscribe(self, topic: str, handler: Callable[[str, Any], None], qos: int = 0):
-        """
-        订阅主题并注册处理函数
-        
-        Args:
-            topic: 主题
-            handler: 消息处理函数
-            qos: 服务质量等级
-        """
-        self.message_handlers[topic] = handler
+        """订阅主题并注册处理函数"""
+        self.message_handlers.setdefault(topic, []).append(handler)
         if self.is_connected:
             self.client.subscribe(topic, qos)
             logger.info(f"🔔 成功订阅 MQTT 主题: '{topic}'")

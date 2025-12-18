@@ -3,6 +3,7 @@ Item CRUD 服务层
 """
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from sqlalchemy import func, asc, desc
 
 from app.models.item import Item
 from app.schemas.item import ItemCreate, ItemUpdate
@@ -126,3 +127,35 @@ class ItemService:
             .limit(limit)
             .all()
         )
+
+    # --- 新增：过滤与分页支持 ---
+    @staticmethod
+    def count_filtered(db: Session, status: Optional[str] = None, is_active: Optional[bool] = None) -> int:
+        """统计满足条件的 Item 总数"""
+        q = db.query(func.count(Item.id))
+        if status is not None:
+            q = q.filter(Item.status == status)
+        if is_active is not None:
+            q = q.filter(Item.is_active == is_active)
+        return q.scalar() or 0
+
+    @staticmethod
+    def get_multi_filtered(
+        db: Session,
+        skip: int = 0,
+        limit: int = 100,
+        status: Optional[str] = None,
+        is_active: Optional[bool] = None,
+        order: str = "desc",
+    ) -> List[Item]:
+        """按条件筛选并分页返回 Item 列表"""
+        q = db.query(Item)
+        if status is not None:
+            q = q.filter(Item.status == status)
+        if is_active is not None:
+            q = q.filter(Item.is_active == is_active)
+        if order == "asc":
+            q = q.order_by(asc(Item.created_at))
+        else:
+            q = q.order_by(desc(Item.created_at))
+        return q.offset(skip).limit(limit).all()

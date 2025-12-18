@@ -10,17 +10,13 @@ from app.core.config import settings
 
 
 def setup_logger(name: str = "app") -> logging.Logger:
-    """
-    设置日志记录器
-    
-    Args:
-        name: 日志记录器名称
-        
-    Returns:
-        配置好的日志记录器
-    """
+    """设置日志记录器"""
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, settings.LOG_LEVEL.upper()))
+
+    # 如果已经配置过 handler，直接返回，避免重复添加导致日志重复
+    if logger.handlers:
+        return logger
 
     # 创建日志目录
     log_file = Path(settings.LOG_FILE)

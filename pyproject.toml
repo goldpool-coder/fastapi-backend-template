@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "fastapi-backend-template"
 version = "1.0.0"
-description = "通用 FastAPI 后端项目模板，支持 MySQL/MSSQL 数据库"
+description = "通用 FastAPI 后端项目模板，支持 MySQL/MSSQL/PostgreSQL 数据库"
 authors = ["Your Name <your.email@example.com>"]
 readme = "README.md"
 license = "MIT"
@@ -16,6 +16,7 @@ pydantic-settings = "^2.6.0"
 sqlalchemy = "^2.0.36"
 pymysql = "^1.1.1"
 pyodbc = "^5.2.0"
+psycopg = {extras = ["binary"], version = "^3.2.1"}
 python-multipart = "^0.0.20"
 aiofiles = "^24.1.0"
 httpx = "^0.28.0"
@@ -38,7 +39,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.black]
 line-length = 100
 target-version = ['py313']
-include = '\.pyi?$'
+include = '\\.pyi?$'
 
 [tool.isort]
 profile = "black"

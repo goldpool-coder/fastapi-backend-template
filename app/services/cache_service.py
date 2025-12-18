@@ -66,6 +66,14 @@ class CacheService:
         key = "item:list:all"
         return await redis_client.get_cache(key)
 
+    @staticmethod
+    async def delete_item_list_cache():
+        """
+        删除 Item 列表缓存
+        """
+        key = "item:list:all"
+        await redis_client.delete_cache(key)
+
 
 # 创建全局缓存服务实例
 cache_service = CacheService()
