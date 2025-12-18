@@ -7,6 +7,8 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1 import api_router
 from app.core.config import settings
+from app.utils.redis_client import redis_client
+from app.utils.mqtt_client import mqtt_client
 
 # 创建 FastAPI 应用实例
 app = FastAPI(
@@ -33,12 +35,20 @@ if settings.BACKEND_CORS_ORIGINS:
 async def startup_event():
     """应用启动时的事件处理"""
     print(f"🚀 {settings.PROJECT_NAME} 正在启动...")
+    # 连接 Redis
+    await redis_client.connect()
+    # 连接 MQTT
+    mqtt_client.connect_async()
     print(f"📝 API 文档地址: http://{settings.HOST}:{settings.PORT}{settings.API_V1_STR}/docs")
 
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """应用关闭时的事件处理"""
+    # 断开 Redis
+    await redis_client.disconnect()
+    # 断开 MQTT
+    mqtt_client.disconnect()
     print(f"🛑 {settings.PROJECT_NAME} 正在关闭...")
 
 

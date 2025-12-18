@@ -14,12 +14,20 @@ services:
     environment:
       - DATABASE_HOST=mysql
       - DATABASE_PORT=3306
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MQTT_HOST=mosquitto
+      - MQTT_PORT=1883
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_started
+      mosquitto:
+        condition: service_started
     networks:
       - backend-network
     restart: unless-stopped
@@ -44,6 +52,34 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
+
+  # Redis 缓存服务
+  redis:
+    image: redis:7.2-alpine
+    container_name: fastapi-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - backend-network
+    restart: unless-stopped
+
+  # Mosquitto MQTT 消息代理服务
+  mosquitto:
+    image: eclipse-mosquitto:2.0
+    container_name: fastapi-mosquitto
+    ports:
+      - "1883:1883" # MQTT 默认端口
+      - "9001:9001" # Websockets 端口
+    volumes:
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+      # 示例配置，生产环境建议使用更安全的配置
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      - backend-network
     restart: unless-stopped
 
   # MSSQL 数据库服务（可选，如需使用请取消注释）
@@ -73,4 +109,7 @@ networks:
 
 volumes:
   mysql-data:
+  redis-data:
+  mosquitto-data:
+  mosquitto-log:
   # mssql-data:  # 如需使用 MSSQL 请取消注释

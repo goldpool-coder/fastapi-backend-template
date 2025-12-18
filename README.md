@@ -7,8 +7,10 @@
 - **现代技术栈**：基于 Python 3.13+ 和 FastAPI 框架
 - **依赖管理**：使用 Poetry 进行依赖管理
 - **数据库支持**：支持 MySQL 和 MS SQL Server，可灵活切换
+- **缓存管理**：集成 **Redis** 缓存服务
+- **消息队列**：集成 **MQTT** 消息代理服务
 - **模块化设计**：清晰的项目结构，易于扩展和维护
-- **完整功能**：包含 CRUD 操作、文件上传下载、HTTP 客户端等基础功能
+- **完整功能**：包含 CRUD 操作、文件上传下载、HTTP 客户端、缓存和消息发布/订阅功能
 - **容器化部署**：提供 Docker 和 Docker Compose 配置
 - **开发友好**：详细的开发环境配置指南和 API 文档
 
@@ -36,16 +38,22 @@ fastapi-backend-template/
 │   │   └── item.py             # Item Schema
 │   ├── services/               # 业务逻辑层
 │   │   ├── item_service.py     # Item 服务
-│   │   └── file_service.py     # 文件服务
+│   │   ├── file_service.py     # 文件服务
+│   │   ├── cache_service.py    # Redis 缓存服务
+│   │   └── message_service.py  # MQTT 消息服务
 │   ├── utils/                  # 工具函数
 │   │   ├── logger.py           # 日志工具
-│   │   └── http_client.py      # HTTP 客户端
+│   │   ├── http_client.py      # HTTP 客户端
+│   │   ├── redis_client.py     # Redis 客户端
+│   │   └── mqtt_client.py      # MQTT 客户端
 │   ├── __init__.py
 │   └── main.py                 # 应用入口
 ├── scripts/                    # 脚本目录
 │   └── init_db.py              # 数据库初始化脚本
 ├── tests/                      # 测试目录
 ├── docs/                       # 文档目录
+├── mosquitto/                  # MQTT 代理配置
+│   └── mosquitto.conf          # 匿名访问配置
 ├── .env.example                # 环境变量示例
 ├── .gitignore                  # Git 忽略文件
 ├── pyproject.toml              # Poetry 配置
@@ -61,6 +69,8 @@ fastapi-backend-template/
 - Python 3.13+
 - Poetry
 - MySQL 或 MS SQL Server
+- Redis Server (可选，Docker Compose 会启动)
+- MQTT Broker (可选，Docker Compose 会启动)
 - PyCharm 2024.2+ (推荐)
 
 ### 安装步骤
@@ -82,7 +92,7 @@ poetry install
 
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，配置数据库连接等信息
+# 编辑 .env 文件，配置数据库、Redis、MQTT 连接等信息
 ```
 注意：拷贝后须修改数据库账号和密码。
 
@@ -140,6 +150,29 @@ MSSQL_DRIVER=ODBC Driver 17 for SQL Server
 
 注意：使用 MSSQL 需要安装 ODBC 驱动。
 
+## 缓存与消息配置
+
+### Redis 配置
+
+在 `.env` 文件中配置：
+
+```env
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+```
+
+### MQTT 配置
+
+在 `.env` 文件中配置：
+
+```env
+MQTT_HOST=localhost
+MQTT_PORT=1883
+MQTT_USER=
+MQTT_PASSWORD=
+```
+
 ## API 接口
 
 ### Item CRUD
@@ -158,24 +191,27 @@ MSSQL_DRIVER=ODBC Driver 17 for SQL Server
 - `DELETE /api/v1/files/{filename}` - 删除文件
 - `GET /api/v1/files/` - 列出所有文件
 
-## Docker 部署
+## Docker 容器化部署 (推荐)
 
-### 构建镜像
+项目已配置好 `docker-compose.yml`，可以一键启动应用、MySQL、Redis 和 Mosquitto (MQTT Broker) 服务。
 
-```bash
-docker build -t fastapi-backend-template .
-```
+1. **配置 `.env` 文件**: 确保 `.env` 文件中的服务主机名设置为 Docker Compose 服务名：
+    ```env
+    DATABASE_HOST=mysql
+    REDIS_HOST=redis
+    MQTT_HOST=mosquitto
+    ```
 
-### 运行容器
-
-```bash
-docker run -d -p 8000:8000 --env-file .env fastapi-backend-template
-```
-
-### 使用 Docker Compose
+2. **启动服务**:
 
 ```bash
 docker-compose up -d
+```
+
+3. **停止服务**:
+
+```bash
+docker-compose down
 ```
 
 ## 开发指南

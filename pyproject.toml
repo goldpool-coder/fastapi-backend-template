@@ -8,7 +8,7 @@ license = "MIT"
 packages = [{include = "app"}]
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = ">=3.13"
 fastapi = "^0.115.0"
 uvicorn = {extras = ["standard"], version = "^0.32.0"}
 pydantic = "^2.10.0"
@@ -20,6 +20,8 @@ python-multipart = "^0.0.20"
 aiofiles = "^24.1.0"
 httpx = "^0.28.0"
 python-dotenv = "^1.0.1"
+redis = "^5.0.1"
+paho-mqtt = "^1.6.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"

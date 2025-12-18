@@ -54,6 +54,22 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE: int = 10 * 1024 * 1024  # 10MB
     ALLOWED_EXTENSIONS: List[str] = ["jpg", "jpeg", "png", "gif", "pdf", "txt", "zip"]
 
+    # Redis 配置
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_DB: int = 0
+    
+    @property
+    def REDIS_URL(self) -> str:
+        """生成 Redis 连接字符串"""
+        return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+
+    # MQTT 配置
+    MQTT_HOST: str = "localhost"
+    MQTT_PORT: int = 1883
+    MQTT_USER: str = ""
+    MQTT_PASSWORD: str = ""
+
     # JWT 配置 (可选)
     SECRET_KEY: str = "your-secret-key-change-this-in-production"
     ALGORITHM: str = "HS256"
