@@ -87,6 +87,16 @@ cd fastapi-backend-template
 ```bash
 poetry install
 ```
+python 安装命令
+```bash
+(Invoke-WebRequest -Uri https://install.python-poetry.org -UseBasicParsing).Content | python -
+```
+安装的时候可能要设置代理：
+```bash
+set HTTP_PROXY=http://192.168.65.99:7766
+set HTTPS_PROXY=http://192.168.65.99:7766
+poetry install
+```
 
 3. **配置环境变量**
 
@@ -102,6 +112,23 @@ cp .env.example .env
 poetry run python scripts/init_db.py
 ```
 注意：运行前需先创建数据库：CREATE DATABASE fastapi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+MQTT 初始化:
+```bash
+docker exec -it mqtt sh
+mosquitto_passwd -c /mosquitto/config/pwfile myuser
+```
+编辑配置文件:
+打开你之前在主机上创建的配置文件 ~/mosquitto/config/mosquitto.conf。
+```bash
+persistence true
+persistence_location /mosquitto/data/
+log_dest file /mosquitto/log/mosquitto.log
+listener 1883
+
+allow_anonymous false
+password_file /mosquitto/config/pwfile
+```
 
 5. **启动应用**
 
