@@ -11,7 +11,8 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     POETRY_VERSION=1.8.0 \
     POETRY_HOME="/opt/poetry" \
-    POETRY_VIRTUALENVS_CREATE=false
+    # 核心修改：告诉 Poetry 在项目目录中创建 .venv 文件夹
+    POETRY_VIRTUALENVS_IN_PROJECT=true
 
 # 将 Poetry 安装到系统路径中
 ENV PATH="$POETRY_HOME/bin:$PATH"
@@ -30,12 +31,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # 复制依赖定义文件
-# 这样可以利用 Docker 缓存 ，只有当这些文件变化时才重新安装依赖
+# 这样可以利用 Docker 缓存  ，只有当这些文件变化时才重新安装依赖
 COPY pyproject.toml poetry.lock* ./
 
 # 安装项目依赖
 # --no-dev 确保只安装生产环境需要的包
-RUN poetry install --no-interaction --no-ansi --no-root --no-dev
+RUN poetry install --no-interaction --no-ansi --no-root --only main
 
 
 # =========================================================================
@@ -72,6 +73,9 @@ COPY --from=builder /app/.venv /app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
 
 # 复制项目代码
+# 注意：这里的 . . 会复制你项目根目录下的所有文件，包括 venv 和 app 文件夹
+# 这意味着容器内的 /app 目录下会有一个 app 子目录，即 /app/app/
+# 你的启动命令 CMD ["uvicorn", "app.main:app", ...] 是正确的，因为它会寻找 /app/app/main.py
 COPY --chown=appuser:appuser . .
 
 # 创建并赋予新用户目录权限
