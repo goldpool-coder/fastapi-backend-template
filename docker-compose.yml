@@ -1,113 +1,52 @@
+# docker-compose.yml
+
+version: '3.8'
+
 services:
+  # -------------------------------------------------
   # FastAPI 应用服务
+  # 这是此 docker-compose 文件管理的唯一服务。
+  # -------------------------------------------------
   app:
+    # 使用当前目录下的 Dockerfile 来构建镜像
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: fastapi-backend
+
+    # 为容器指定一个明确的名称，方便管理
+    container_name: fastapi-backend-app
+
+    # 将主机的 8000 端口映射到容器的 8000 端口
     ports:
       - "8000:8000"
+
+    # 指定包含环境变量的 .env 文件
+    # docker-compose 会自动加载此文件中的配置
     env_file:
       - .env
-    environment:
-      - DATABASE_HOST=mysql
-      - DATABASE_PORT=3306
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MQTT_HOST=mosquitto
-      - MQTT_PORT=1883
+
+    # 将本地的 uploads 和 logs 目录挂载到容器内部
+    # 这样上传的文件和生成的日志就能持久化保存在主机上
     volumes:
       - ./uploads:/app/uploads
       - ./logs:/app/logs
-    depends_on:
-      mysql:
-        condition: service_healthy
-      redis:
-        condition: service_started
-      mosquitto:
-        condition: service_started
+
+    # [核心配置] 将此服务连接到外部网络
     networks:
-      - backend-network
+      - shared_network # 这是下面定义的网络别名
+
+    # 配置重启策略：除非手动停止，否则容器总是在退出后自动重启
     restart: unless-stopped
 
-  # MySQL 数据库服务
-  mysql:
-    image: mysql:8.0
-    container_name: fastapi-mysql
-    ports:
-      - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: ${DATABASE_PASSWORD:-password}
-      MYSQL_DATABASE: ${DATABASE_NAME:-fastapi_db}
-      MYSQL_USER: ${DATABASE_USER:-fastapi}
-      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-password}
-    volumes:
-      - mysql-data:/var/lib/mysql
-    networks:
-      - backend-network
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DATABASE_PASSWORD:-password}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
-
-  # Redis 缓存服务
-  redis:
-    image: redis:7.2-alpine
-    container_name: fastapi-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    networks:
-      - backend-network
-    restart: unless-stopped
-
-  # Mosquitto MQTT 消息代理服务
-  mosquitto:
-    image: eclipse-mosquitto:2.0
-    container_name: fastapi-mosquitto
-    ports:
-      - "1883:1883" # MQTT 默认端口
-      - "9001:9001" # Websockets 端口
-    volumes:
-      - mosquitto-data:/mosquitto/data
-      - mosquitto-log:/mosquitto/log
-      # 示例配置，生产环境建议使用更安全的配置
-      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
-    networks:
-      - backend-network
-    restart: unless-stopped
-
-  # MSSQL 数据库服务（可选，如需使用请取消注释）
-  # mssql:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   container_name: fastapi-mssql
-  #   ports:
-  #     - "1433:1433"
-  #   environment:
-  #     ACCEPT_EULA: Y
-  #     SA_PASSWORD: ${DATABASE_PASSWORD:-YourPassword123}
-  #     MSSQL_PID: Developer
-  #   volumes:
-  #     - mssql-data:/var/opt/mssql
-  #   networks:
-  #     - backend-network
-  #   healthcheck:
-  #     test: /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P "${DATABASE_PASSWORD:-YourPassword123}" -Q "SELECT 1" || exit 1
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   restart: unless-stopped
-
+# -------------------------------------------------
+# 网络定义
+# 告诉 Docker Compose 如何处理我们需要的网络。
+# -------------------------------------------------
 networks:
-  backend-network:
-    driver: bridge
+  # 为外部网络起一个在当前 compose 文件中使用的别名
+  shared_network:
+    # 声明这是一个已经存在的外部网络
+    external: true
+    # 指定外部网络的实际名称
+    name: shared-services-net
 
-volumes:
-  mysql-data:
-  redis-data:
-  mosquitto-data:
-  mosquitto-log:
-  # mssql-data:  # 如需使用 MSSQL 请取消注释
