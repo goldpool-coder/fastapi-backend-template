@@ -18,14 +18,7 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 # 安装构建所需的系统依赖和 Poetry
-# --no-install-recommends 可以显著减少安装的包，降低内存消耗和镜像大小
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    unixodbc-dev \
-    curl \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -sSL https://install.python-poetry.org | python3 -
+RUN pip install poetry==1.8.0
 
 # 设置工作目录
 WORKDIR /app
