@@ -38,19 +38,19 @@ class RedisClient:
             db: 数据库编号（不提供则使用 settings.REDIS_DB）
         """
         try:
-            if password is not None or username is not None:
-                # 显式使用用户名/密码连接（避免在 URL 中曝光密码）
+            # 如果显式提供了用户名/密码，或者配置中存在密码，则优先使用参数连接，避免 URL 中的特殊字符导致解析错误
+            if (password is not None) or (username is not None) or (settings.REDIS_PASSWORD):
                 self._redis_client = redis.Redis(
                     host=host or settings.REDIS_HOST,
                     port=port or settings.REDIS_PORT,
                     db=db or settings.REDIS_DB,
-                    password=password if password is not None else (settings.REDIS_PASSWORD or None),
+                    password=(password if password is not None else (settings.REDIS_PASSWORD or None)),
                     username=username,
                     encoding="utf-8",
                     decode_responses=True,
                 )
             else:
-                # 优先使用显式传入的 URL；否则使用配置中的 REDIS_URL（已包含密码时自动认证）
+                # 优先使用显式传入的 URL；否则使用配置中的 REDIS_URL
                 final_url = url or settings.REDIS_URL
                 self._redis_client = redis.from_url(
                     final_url,
