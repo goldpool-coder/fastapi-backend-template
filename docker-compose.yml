@@ -14,7 +14,7 @@ services:
       dockerfile: Dockerfile
 
     # 为容器指定一个明确的名称，方便管理
-    container_name: fastapi-backend-app
+    container_name: fastapi-backend-template
 
     # 将主机的 8000 端口映射到容器的 8000 端口
     ports:

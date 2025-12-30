@@ -23,6 +23,7 @@ httpx = "^0.28.0"
 python-dotenv = "^1.0.1"
 redis = "^5.0.1"
 paho-mqtt = "^2.1.0"
+cryptography = "^42.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.4"
