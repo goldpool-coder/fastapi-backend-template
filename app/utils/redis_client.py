@@ -1,5 +1,6 @@
 """
 Redis 客户端工具模块
+支持受保护（需密码/用户名）的 Redis 连接
 """
 import json
 from typing import Any, Optional
@@ -15,14 +16,49 @@ class RedisClient:
         """初始化 Redis 连接"""
         self._redis_client: Optional[redis.Redis] = None
 
-    async def connect(self):
-        """建立 Redis 连接"""
-        self._redis_client = redis.from_url(
-            settings.REDIS_URL,
-            encoding="utf-8",
-            decode_responses=True,
-        )
+    async def connect(
+        self,
+        url: Optional[str] = None,
+        *,
+        password: Optional[str] = None,
+        username: Optional[str] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+        db: Optional[int] = None,
+    ):
+        """
+        建立 Redis 连接
+        
+        Args:
+            url: 连接字符串（如 redis://:password@host:port/db），不提供则使用配置 settings.REDIS_URL
+            password: 密码（优先级高于 url，用于受保护的 Redis）
+            username: 用户名（Redis 6+ ACL，可选）
+            host: 主机（不提供则使用 settings.REDIS_HOST）
+            port: 端口（不提供则使用 settings.REDIS_PORT）
+            db: 数据库编号（不提供则使用 settings.REDIS_DB）
+        """
         try:
+            if password is not None or username is not None:
+                # 显式使用用户名/密码连接（避免在 URL 中曝光密码）
+                self._redis_client = redis.Redis(
+                    host=host or settings.REDIS_HOST,
+                    port=port or settings.REDIS_PORT,
+                    db=db or settings.REDIS_DB,
+                    password=password if password is not None else (settings.REDIS_PASSWORD or None),
+                    username=username,
+                    encoding="utf-8",
+                    decode_responses=True,
+                )
+            else:
+                # 优先使用显式传入的 URL；否则使用配置中的 REDIS_URL（已包含密码时自动认证）
+                final_url = url or settings.REDIS_URL
+                self._redis_client = redis.from_url(
+                    final_url,
+                    encoding="utf-8",
+                    decode_responses=True,
+                )
+
+            # 测试连接
             await self._redis_client.ping()
             print("✅ Redis 连接成功")
         except Exception as e:

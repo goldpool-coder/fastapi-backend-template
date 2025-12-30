@@ -59,10 +59,16 @@ class Settings(BaseSettings):
     REDIS_HOST: str = "localhost"
     REDIS_PORT: int = 6379
     REDIS_DB: int = 0
-    
+    REDIS_PASSWORD: Optional[str] = ""
+
     @property
     def REDIS_URL(self) -> str:
         """生成 Redis 连接字符串"""
+        # 如提供密码，则使用带密码的连接字符串（不记录/不打印密码）
+        if self.REDIS_PASSWORD:
+            return (
+                f"redis://:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
+            )
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
     # MQTT 配置
