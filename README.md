@@ -106,28 +106,76 @@ cp .env.example .env
 ```
 注意：拷贝后须修改数据库账号和密码。
 
-4. **初始化数据库**
+4. **初始化数据库（在已有数据库或容器场景）**
 
-```bash
-poetry run python scripts/init_db.py
-```
-注意：运行前需先创建数据库：CREATE DATABASE fastapi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+- 先在数据库服务器创建数据库（MySQL 示例）：
+  ```sql
+  CREATE DATABASE fastapi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  ```
 
-MQTT 初始化:
+- 不要在“数据库容器”里运行 Poetry 命令。初始化脚本应在“应用环境”执行，任选其一：
+  1) 本机开发环境：
+  ```bash
+  poetry run python scripts/init_db.py
+  ```
+  2) Docker Compose：
+  ```bash
+  docker-compose exec app poetry run python scripts/init_db.py
+  ```
+  3) 直接使用镜像运行一次性初始化（无需本机装 Poetry）：
+  ```bash
+  docker run --rm --env-file ./.env harmonynext/fastapi-backend-template:last python scripts/init_db.py
+  ```
+  或者挂载 `.env` 文件：
+  ```bash
+  docker run --rm -v "./.env:/app/.env" harmonynext/fastapi-backend-template:last python scripts/init_db.py
+  ```
+
+- 如果无法使用上述脚本，你也可以用 MySQL 客户端手动创建/迁移：
+  ```bash
+  docker exec -it <mysql_container> mysql -u<user> -p -e "CREATE DATABASE IF NOT EXISTS fastapi_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+  ```
+
+### MQTT 初始化（容器默认无账号与密码）
+
+1. 进入 mosquitto 容器并创建密码文件与用户：
 ```bash
 docker exec -it mqtt sh
 mosquitto_passwd -c /mosquitto/config/pwfile myuser
+# 再添加其它用户（非首次用 -b）
+# mosquitto_passwd -b /mosquitto/config/pwfile another_user strong_password
 ```
-编辑配置文件:
-打开你之前在主机上创建的配置文件 ~/mosquitto/config/mosquitto.conf。
-```bash
+
+2. 编辑配置文件 `/mosquitto/config/mosquitto.conf`：
+```
 persistence true
 persistence_location /mosquitto/data/
 log_dest file /mosquitto/log/mosquitto.log
 listener 1883
-
 allow_anonymous false
 password_file /mosquitto/config/pwfile
+```
+
+3. 重启容器使配置生效：
+```bash
+docker restart mqtt
+```
+
+4. 在 `.env` 设置：
+```env
+MQTT_HOST=localhost
+MQTT_PORT=1883
+MQTT_USER=myuser
+MQTT_PASSWORD=strong_password
+```
+
+如果你是首次启动并希望直接启用账号密码，可使用挂载配置和数据目录的方式：
+```bash
+docker run -d --name mqtt -p 1883:1883 \
+  -v ./mosquitto/config:/mosquitto/config \
+  -v ./mosquitto/data:/mosquitto/data \
+  -v ./mosquitto/log:/mosquitto/log \
+  eclipse-mosquitto:2.0
 ```
 
 5. **启动应用**
@@ -179,15 +227,50 @@ MSSQL_DRIVER=ODBC Driver 17 for SQL Server
 
 ## 缓存与消息配置
 
-### Redis 配置
+### Redis 配置（无密码与有密码两种方式）
 
-在 `.env` 文件中配置：
+在 `.env` 文件中配置（根据你的实际情况选择）：
 
-```env
-REDIS_HOST=localhost
-REDIS_PORT=6379
-REDIS_DB=0
-```
+- 无密码（默认）：
+  ```env
+  REDIS_HOST=localhost
+  REDIS_PORT=6379
+  REDIS_DB=0
+  # REDIS_PASSWORD 不设置或留空
+  ```
+
+- 有密码：
+  ```env
+  REDIS_HOST=localhost
+  REDIS_PORT=6379
+  REDIS_DB=0
+  REDIS_PASSWORD=your-strong-password
+  ```
+
+如何设置 Redis 访问密码与绑定 IP：
+- 本机 `redis-cli` 临时设置密码并持久化：
+  ```bash
+  redis-cli CONFIG SET requirepass "your-strong-password"
+  redis-cli CONFIG REWRITE
+  ```
+- 使用配置文件持久化（`redis.conf`）：
+  ```
+  requirepass your-strong-password
+  bind 127.0.0.1
+  protected-mode yes
+  ```
+  提示：
+  - 仅本机访问：`bind 127.0.0.1`
+  - 对外访问：`bind 0.0.0.0` 并确保已开启防火墙/安全组规则，建议同时设置 `requirepass`。
+- Docker 启动带密码并绑定 IP：
+  ```bash
+  docker run -d --name redis -p 6379:6379 redis:7.2-alpine \
+    redis-server --requirepass "your-strong-password" --bind 0.0.0.0 --protected-mode yes
+  ```
+
+注意：
+- 当 Redis 没有设置密码时，保持 `REDIS_PASSWORD` 留空或不填；启用密码后将其填写到 `.env`。
+- 应用已支持通过 `.env` 的 `REDIS_PASSWORD` 安全连接，无需手动拼接 Redis URL。
 
 ### MQTT 配置
 
@@ -252,3 +335,8 @@ docker-compose down
 ## 许可证
 
 MIT License
+
+本项目是本人学习 Python 的练习项目，也是作为日后开发企业应用系统后端接口的模板，因为企业业务系统通常都会用到数据库、消息、缓存、文件操作、接口访问等功能，所以模板直接集成了这几个功能。
+欢迎大家使用，也可以与本人联系交流：
+飞浪 gold.pool@gmail.com 
+http://ai.urok.cn
